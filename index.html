@@ -87,6 +87,11 @@ footer{text-align:center;padding:10px 22px 48px;font-size:.95rem;opacity:.8}
 .modal h2{font-family:var(--f1);font-weight:700;font-size:clamp(1.6rem,6vw,2rem);line-height:1.2;margin:14px 0 12px}
 .modal p{font-size:1.15rem}
 .modal:focus{outline:none}
+.snd{position:fixed;top:14px;right:14px;z-index:40;width:52px;height:52px;border-radius:50%;border:0;background:rgba(255,255,255,.88);color:var(--plum);display:grid;place-items:center;box-shadow:0 8px 20px rgba(58,33,66,.2);backdrop-filter:blur(4px);transition:transform .15s}
+.snd:hover{transform:scale(1.07)}
+.snd svg{width:26px;height:26px}
+.snd .off,.snd.muted .on{display:none}
+.snd.muted .off{display:block}
 
 @keyframes drop{from{opacity:0;transform:translateY(-36px) rotate(-10deg)}}
 @keyframes fade{from{opacity:0}}
@@ -102,7 +107,7 @@ footer{text-align:center;padding:10px 22px 48px;font-size:.95rem;opacity:.8}
 
 <header class="hero">
   <h1 id="title">Buon Compleanno Alessia!</h1>
-  <p class="sub">Da Vienna a Latina, passando per Schottentor e un mese di risate. Questo è il mio piccolo regalo per te.</p>
+  <p class="sub">Da Vienna a Latina, passando per Schottentor e qualche negozio di souvenir. Questo è il mio piccolo pensiero per te.</p>
   <div class="stitch"></div>
 </header>
 
@@ -151,7 +156,7 @@ footer{text-align:center;padding:10px 22px 48px;font-size:.95rem;opacity:.8}
   <div class="vhead">
     <div>
       <h2 id="vt">Best of citazioni di Vienna</h2>
-      <p>Alcune cazzate che mi fanno ancora ridere a ripensarci🫠</p>
+      <p>un paio di cazzate che mi fanno ridere e ripensare a te🫠</p>
     </div>
     <div class="nav">
       <button class="arrow" id="prev" aria-label="Citazione precedente">‹</button>
@@ -185,7 +190,11 @@ footer{text-align:center;padding:10px 22px 48px;font-size:.95rem;opacity:.8}
     
   </div>
 </div>
-
+<audio id="bgm" src="canzone.mp3" loop preload="auto"></audio>
+<button class="snd muted" id="snd" aria-label="Attiva audio" aria-pressed="false">
+  <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="m16 9 6 6M22 9l-6 6"/></svg>
+</button>
 <canvas id="confetti"></canvas>
 
 <script>
@@ -271,6 +280,40 @@ function closeModal() { modal.hidden = true; $('#go').focus(); }
 $('#go').onclick = openModal;
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+</script>
+<script>
+/* Musica di sottofondo (script separato: funziona anche se altro codice ha un errore) */
+(function () {
+  const bgm = document.getElementById('bgm'), snd = document.getElementById('snd');
+  if (!bgm || !snd) { console.error('Musica: manca <audio id="bgm"> oppure il pulsante id="snd"'); return; }
+  bgm.volume = 0.5; // volume medio (0 = muto, 1 = massimo)
+  function sync() {
+    const off = bgm.paused || bgm.muted;
+    snd.classList.toggle('muted', off);
+    snd.setAttribute('aria-pressed', String(!off));
+    snd.setAttribute('aria-label', off ? 'Attiva audio' : 'Disattiva audio');
+  }
+  ['play', 'pause', 'volumechange'].forEach(ev => bgm.addEventListener(ev, sync));
+  /* I browser bloccano l'audio automatico: se serve, parte al primo tocco/click sulla pagina */
+  const evs = ['pointerup', 'touchend', 'click', 'keydown'];
+  function unlock(e) {
+    if (e.target.closest && e.target.closest('#snd')) return;
+    bgm.play().catch(() => {});
+  }
+  evs.forEach(ev => addEventListener(ev, unlock));
+  bgm.addEventListener('play', () => evs.forEach(ev => removeEventListener(ev, unlock)));
+  bgm.play().catch(() => {});
+  snd.addEventListener('click', () => {
+    if (bgm.paused) { bgm.muted = false; bgm.play().catch(err => console.error('Musica non avviabile:', err)); }
+    else bgm.muted = !bgm.muted;
+  });
+  bgm.addEventListener('error', () => {
+    console.error('Musica: impossibile caricare "' + bgm.getAttribute('src') + '". Controlla nome e cartella del file.');
+    snd.hidden = true;
+  });
+  sync();
+})();
 </script>
 </body>
 </html>
